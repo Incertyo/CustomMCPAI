@@ -1,18 +1,17 @@
 # ☁️ AI Cloud Optimization Agent
 
-A production-ready AI system that analyzes cloud usage and generates optimization recommendations using **Gemini API**, **MCP Server**, **n8n automation**, and **Streamlit dashboard**.
+A production-ready AI system that analyzes cloud usage and generates optimization recommendations using **Gemini API**, **MCP Server**, and **Streamlit dashboard**.
 
 ## 🎯 System Overview
 
 ```
-Cloud APIs → MCP Server → Gemini AI Agent → n8n → Streamlit Dashboard
+Cloud APIs → MCP Server → Gemini AI Agent → Streamlit Dashboard
 ```
 
 ### Components
 
 - **MCP Server**: Exposes tools for cloud usage, billing, and optimization rules
 - **Gemini AI Agent**: Analyzes data and generates recommendations
-- **n8n Workflow**: Orchestrates the automation pipeline
 - **Streamlit Dashboard**: Displays recommendations with approval interface
 
 ## 🚀 Quick Start
@@ -20,7 +19,6 @@ Cloud APIs → MCP Server → Gemini AI Agent → n8n → Streamlit Dashboard
 ### Prerequisites
 
 - Python 3.8+
-- Node.js (for n8n, optional)
 - Gemini API Key ([Get one here](https://makersuite.google.com/app/apikey))
 
 ### Installation
@@ -65,33 +63,6 @@ streamlit run streamlit_app.py
 ```
 
 Dashboard will open at `http://localhost:8501`
-
-## 📋 n8n Workflow Setup
-
-1. **Install n8n:**
-```bash
-npm install n8n -g
-# OR use Docker
-docker run -it --rm --name n8n -p 5678:5678 n8nio/n8n
-```
-
-2. **Import Workflow:**
-   - Open n8n at http://localhost:5678
-   - Click "Import from File"
-   - Select `n8n_workflow.json`
-   - Configure Gemini API credentials
-   - Activate workflow
-
-3. **Workflow Steps:**
-   - **Trigger**: Weekly cron schedule (or manual)
-   - **Fetch Cloud Usage**: Calls MCP server
-   - **Fetch Cloud Billing**: Calls MCP server
-   - **Fetch Optimization Rules**: Calls MCP server
-   - **Combine Data**: Merges all data
-   - **Call Gemini API**: Sends to AI for analysis
-   - **Parse Response**: Extracts JSON recommendations
-   - **Save Recommendations**: Writes to `recommendations.json`
-   - **Update MCP Context**: Stores context for future use
 
 ## 🧠 AI Agent System Prompt
 
@@ -156,7 +127,7 @@ curl -X POST http://localhost:8000/mcp/tools/get_cloud_cost \
 - **Read-only access**: MCP server uses read-only cloud IAM roles
 - **No delete permissions**: Agent cannot delete resources
 - **Human approval**: All actions require approval via Streamlit
-- **Audit logs**: n8n execution history tracks all runs
+- **Audit logs**: Execution history tracks all runs
 
 ## 📈 Optimization Logic
 
@@ -172,28 +143,14 @@ curl -X POST http://localhost:8000/mcp/tools/get_cloud_cost \
 ### Local Development
 - MCP Server: `python mcp_server.py`
 - Streamlit: `streamlit run streamlit_app.py`
-- n8n: Docker or npm install
 
 ### Production Deployment
 
 | Component | Platform |
 |-----------|----------|
 | MCP Server | Docker / VM / Cloud Run |
-| n8n | Docker / n8n Cloud |
 | Streamlit | Streamlit Cloud / VM |
 | Gemini API | Google AI Studio |
-
-### Docker Deployment (Example)
-
-```dockerfile
-# Dockerfile for MCP Server
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY mcp_server.py .
-CMD ["python", "mcp_server.py"]
-```
 
 ## 📦 Project Structure
 
@@ -202,7 +159,6 @@ CMD ["python", "mcp_server.py"]
 ├── mcp_server.py          # MCP Server (FastAPI)
 ├── gemini_agent.py        # Gemini AI Agent
 ├── streamlit_app.py       # Streamlit Dashboard
-├── n8n_workflow.json      # n8n Workflow Definition
 ├── requirements.txt       # Python Dependencies
 ├── .env.example           # Environment Template
 └── README.md              # This file
@@ -285,4 +241,4 @@ For questions or issues, please open a GitHub issue.
 
 ---
 
-**Built with ❤️ using Gemini AI, MCP, n8n, and Streamlit**
+**Built with ❤️ using Gemini AI, MCP, and Streamlit**
