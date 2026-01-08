@@ -1,0 +1,46 @@
+{
+  "summary": "Analysis identified 3 optimization opportunities with potential monthly savings of $185.00",
+  "total_potential_savings": "$185.00/month",
+  "recommendations": [
+    {
+      "resource_id": "vm-prod-gcp-01",
+      "resource_type": "compute",
+      "issue": "CPU usage consistently below 20% (avg: 15.5%, max: 45.2%)",
+      "current_state": "Instance type: n1-standard-4, CPU: 15.5% avg, Memory: 32.1% avg, Cost: $150/month",
+      "action": "Downsize machine type from n1-standard-4 to n1-standard-2",
+      "estimated_savings": "$110.00/month",
+      "risk": "low",
+      "priority": "high",
+      "implementation_effort": "low"
+    },
+    {
+      "resource_id": "vm-dev-gcp-02",
+      "resource_type": "compute",
+      "issue": "Severely underutilized instance with only 3.2% CPU usage and 45.2% uptime",
+      "current_state": "Instance type: n1-standard-2, CPU: 3.2% avg, Uptime: 45.2%, Cost: $75/month",
+      "action": "Stop instance during non-business hours or consider serverless alternatives",
+      "estimated_savings": "$50.00/month",
+      "risk": "low",
+      "priority": "medium",
+      "implementation_effort": "medium"
+    },
+    {
+      "resource_id": "bucket-gcp-archive-02",
+      "resource_type": "storage",
+      "issue": "Low access frequency storage using expensive standard tier",
+      "current_state": "Size: 850.2 GB, Access frequency: low, Storage type: standard, Cost: $17/month",
+      "action": "Move to cold storage tier (Nearline or Coldline)",
+      "estimated_savings": "$25.00/month",
+      "risk": "low",
+      "priority": "medium",
+      "implementation_effort": "low"
+    }
+  ],
+  "insights": [
+    "3 compute instances analyzed, 2 show significant underutilization",
+    "Storage costs are within acceptable range but optimization opportunity exists",
+    "Network egress costs are reasonable at 7.4% of total",
+    "Overall infrastructure shows good uptime (99.8% for production instance)",
+    "Consider implementing auto-scaling for variable workloads"
+  ]
+}

@@ -1,0 +1,263 @@
+{
+  "name": "Cloud Optimization AI Agent Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Weekly Schedule",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/mcp/tools/get_cloud_usage",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "provider",
+              "value": "gcp"
+            },
+            {
+              "name": "time_range",
+              "value": "last_30_days"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-usage",
+      "name": "Fetch Cloud Usage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/mcp/tools/get_cloud_cost",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "provider",
+              "value": "gcp"
+            },
+            {
+              "name": "time_range",
+              "value": "last_30_days"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-billing",
+      "name": "Fetch Cloud Billing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/mcp/tools/get_optimization_rules",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "resource_type",
+              "value": "compute"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-rules",
+      "name": "Fetch Optimization Rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine usage, billing, and rules data\nconst usageData = $input.item.json;\nconst billingData = $('Fetch Cloud Billing').item.json;\nconst rulesData = $('Fetch Optimization Rules').item.json;\n\nreturn {\n  json: {\n    usage: usageData,\n    billing: billingData,\n    rules: rulesData.rules || []\n  }\n};"
+      },
+      "id": "combine-data",
+      "name": "Combine Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": `You are an autonomous Cloud Optimization AI Agent.\\n\\nAnalyze the following cloud data:\\n\\nUSAGE DATA:\\n${JSON.stringify($json.usage, null, 2)}\\n\\nBILLING DATA:\\n${JSON.stringify($json.billing, null, 2)}\\n\\nOPTIMIZATION RULES:\\n${JSON.stringify($json.rules, null, 2)}\\n\\nGenerate optimization recommendations in JSON format:\\n{\\n  \"summary\": \"Brief summary\",\\n  \"total_potential_savings\": \"$XXX.XX/month\",\\n  \"recommendations\": [{\\n    \"resource_id\": \"id\",\\n    \"resource_type\": \"compute|storage|network\",\\n    \"issue\": \"description\",\\n    \"current_state\": \"metrics\",\\n    \"action\": \"recommended action\",\\n    \"estimated_savings\": \"$XX.XX/month\",\\n    \"risk\": \"low|medium|high\",\\n    \"priority\": \"high|medium|low\"\\n  }]\\n}`\n    }]\n  }]\n}",
+        "options": {}
+      },
+      "id": "gemini-api",
+      "name": "Call Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini response\nconst geminiResponse = $input.item.json;\nconst content = geminiResponse.candidates[0].content.parts[0].text;\n\n// Extract JSON from response\nlet jsonContent = content;\nif (content.includes('```json')) {\n  jsonContent = content.split('```json')[1].split('```')[0].trim();\n} else if (content.includes('```')) {\n  jsonContent = content.split('```')[1].split('```')[0].trim();\n}\n\ntry {\n  const recommendations = JSON.parse(jsonContent);\n  return { json: recommendations };\n} catch (e) {\n  return {\n    json: {\n      error: true,\n      summary: \"Failed to parse AI response\",\n      recommendations: [],\n      raw_response: content\n    }\n  };\n}"
+      },
+      "id": "parse-response",
+      "name": "Parse Gemini Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "writeFile",
+        "fileName": "recommendations.json",
+        "fileContent": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {}
+      },
+      "id": "save-results",
+      "name": "Save Recommendations",
+      "type": "n8n-nodes-base.writeFile",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/mcp/context",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"usage\": $('Combine Data').item.json.usage,\n  \"billing\": $('Combine Data').item.json.billing,\n  \"metadata\": {\n    \"timestamp\": new Date().toISOString(),\n    \"workflow_id\": $workflow.id\n  }\n}",
+        "options": {}
+      },
+      "id": "update-context",
+      "name": "Update MCP Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1450, 450]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Cloud Usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Cloud Usage": {
+      "main": [
+        [
+          {
+            "node": "Fetch Cloud Billing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Cloud Billing": {
+      "main": [
+        [
+          {
+            "node": "Fetch Optimization Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Optimization Rules": {
+      "main": [
+        [
+          {
+            "node": "Combine Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Data": {
+      "main": [
+        [
+          {
+            "node": "Call Gemini API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update MCP Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Parse Gemini Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Gemini Response": {
+      "main": [
+        [
+          {
+            "node": "Save Recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
