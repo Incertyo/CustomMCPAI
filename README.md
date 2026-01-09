@@ -234,7 +234,6 @@ MIT License - Feel free to use for academic or commercial purposes.
 ## 🤝 Contributing
 
 Contributions welcome! Please open issues or pull requests.
-
 ## 📧 Support
 
 For questions or issues, please open a GitHub issue.
